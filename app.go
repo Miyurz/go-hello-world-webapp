@@ -2,46 +2,26 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 )
 
-type Message struct {
-	Message string `json:"message"`
-	Version string `json:"version"`
-}
-
-func getMessage() (*Message, error) {
-	greeterServiceHostname := "greeter-service"
-	url := fmt.Sprintf("http://%s/", greeterServiceHostname)
-	response, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-
-	responseData, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var message Message
-	json.Unmarshal(responseData, &message)
-	return &message, nil
-}
-
-func handler(w http.ResponseWriter, r *http.Request) {
-	message, err := getMessage()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	fmt.Fprintf(w, "%s (greeter-service: %s)", message.Message, message.Version)
-}
-
 func main() {
-	fmt.Print("Starting 'hello-world-service'...")
-	http.HandleFunc("/", handler)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	handler := http.HandlerFunc(handleRequest)
+	http.Handle("/", handler)
+	log.Printf("Received request!")
+	http.ListenAndServe(":8080", nil)
+}
+
+func handleRequest(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusCreated)
+	w.Header().Set("Content-Type", "application/json")
+	resp := make(map[string]string)
+	resp["message"] = "Hello world, I have created the status"
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		log.Fatalf("Error happened in JSON marshal. Err: %s", err)
+	}
+	w.Write(jsonResp)
+	return
 }
